@@ -308,3 +308,125 @@ def log_review(db: sqlite3.Connection, kind: str, doc_id: str | None, detail: st
     with db:
         db.execute("INSERT INTO review_log (created_at, kind, doc_id, detail) VALUES (?,?,?,?)",
                    (datetime.now(UTC).isoformat(timespec="seconds"), kind, doc_id, detail))
+
+
+# ---------------------------------------------------------------- property views (agent + API)
+
+# Instruments that move ownership. Mortgages and "other" never change who owns the land.
+TRANSFER_TYPES = ("tax deed", "quitclaim deed", "warranty deed", "bargain and sale deed", JUDGMENT)
+
+
+def money(amount: float | None) -> str:
+    return f"${amount:,.2f}" if amount is not None else "—"
+
+
+def previous_document(db: sqlite3.Connection, doc_id: str) -> tuple[str, str] | None:
+    """(title, how) of the document this one points back to."""
+    row = db.execute("SELECT d.title, c.how FROM chain c JOIN documents d ON d.doc_id = c.previous_doc_id "
+                     "WHERE c.doc_id = ? ORDER BY c.how LIMIT 1", (doc_id,)).fetchone()
+    return (row[0], row[1]) if row else None
+
+
+def current_owners(db: sqlite3.Connection, parcel: str) -> list[str]:
+    """Grantees of the newest ownership transfer of the parcel ([] if unknown)."""
+    for row in parcel_documents(db, parcel):
+        if row["instrument_type"] in TRANSFER_TYPES:
+            names = party_names(db, row["doc_id"], "grantee")
+            if names:
+                return names
+    return []
+
+
+def property_summary(db: sqlite3.Connection, parcel: str) -> dict[str, Any]:
+    rows = parcel_documents(db, parcel)
+    address = next((r["property_address"] for r in rows if r["property_address"]), None)
+    town = next((r["town"] for r in rows if r["town"]), None)
+    return {"parcel": parcel, "address": address, "town": town,
+            "current_owner": "; ".join(current_owners(db, parcel)) or None, "documents": len(rows)}
+
+
+def chain_entries(db: sqlite3.Connection, parcel: str) -> list[dict[str, Any]]:
+    """The parcel's documents, newest first, shaped for the chain-of-title timeline."""
+    out = []
+    for r in parcel_documents(db, parcel):
+        prev = previous_document(db, r["doc_id"])
+        out.append({
+            "doc_id": r["doc_id"], "title": r["title"], "year": r["year"], "type": r["instrument_type"],
+            "date_recorded": r["date_recorded"], "num_pages": r["num_pages"],
+            "sellers": party_names(db, r["doc_id"], "grantor"),
+            "buyers": party_names(db, r["doc_id"], "grantee"),
+            "price_in_deed": r["consideration_in_deed"], "price_reported": r["consideration_reported"],
+            "transfer_tax": r["transfer_tax"], "nominal": is_nominal(r["consideration_in_deed"]),
+            "previous": prev[0] if prev else None,
+        })
+    return out
+
+
+def records_lines(db: sqlite3.Connection, parcel: str) -> list[dict[str, str]]:
+    """One labelled line per instrument of the parcel, oldest first, for the answer prompt."""
+    lines = []
+    for r in reversed(parcel_documents(db, parcel)):
+        if r["date_recorded"] is None and r["date_signed"] is None and r["volume"] is None:
+            continue  # nothing was extracted for this document
+        names = lambda role, d=r["doc_id"]: "; ".join(party_names(db, d, role)) or "—"  # noqa: E731
+        prev = previous_document(db, r["doc_id"])
+        label = f"records: {r['title']}"
+        text = (f"[{label}] type {r['instrument_type'] or '—'}; signed {r['date_signed'] or '—'}, "
+                f"recorded {r['date_recorded'] or '—'}; sellers: {names('grantor')}; buyers: {names('grantee')}; "
+                f"price in deed {price_label(r['consideration_in_deed']) or '—'}; "
+                f"price reported to county {money(r['consideration_reported'])}; "
+                f"transfer tax {money(r['transfer_tax'])}; parcels {', '.join(doc_parcels(db, r['doc_id']))}; "
+                f"property address {r['property_address'] or '—'}; town {r['town'] or '—'}; "
+                f"acreage {r['acreage'] if r['acreage'] is not None else '—'}; "
+                f"previous document: {prev[0] + ' (' + prev[1] + ')' if prev else '—'}")
+        lines.append({"label": label, "doc_id": r["doc_id"], "title": r["title"], "text": text})
+    return lines
+
+
+def has_records(db: sqlite3.Connection, parcel: str) -> bool:
+    return db.execute("SELECT 1 FROM instruments i JOIN parcels p USING (doc_id) WHERE p.parcel_id = ? LIMIT 1",
+                      (parcel,)).fetchone() is not None
+
+
+def known_party_words(db: sqlite3.Connection, parcel: str) -> set[str]:
+    """Lower-case words of every party name in the parcel's records (for the owner-name check)."""
+    words: set[str] = set()
+    for r in parcel_documents(db, parcel):
+        for role in ("grantor", "grantee"):
+            for n in party_names(db, r["doc_id"], role):
+                words |= set(re.findall(r"[a-z]+", n.lower()))
+    return words
+
+
+def _value_forms(value: Any) -> list[str]:
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and value:
+        return [f"{value:,.2f}", f"{value:,.0f}", f"{value:.2f}"]
+    if isinstance(value, str) and len(value) >= 4:
+        return [value]
+    return []
+
+
+def weak_values(db: sqlite3.Connection, parcel: str) -> list[dict[str, Any]]:
+    """Lesson 11: values whose evidence quote was NOT found word for word ('words on page' or
+    'not found'). An answer that uses one of them is paused for human review."""
+    out = []
+    for r in parcel_documents(db, parcel):
+        for ev in db.execute("SELECT field, page, quote, verified FROM evidence "
+                             "WHERE doc_id = ? AND verified != 'exact'", (r["doc_id"],)).fetchall():
+            field_name = ev["field"]
+            if field_name in ("grantors", "grantees"):
+                values: list[Any] = party_names(db, r["doc_id"], field_name[:-1])
+            elif field_name in ("consideration_reported", "property_address"):
+                values = [r[field_name]]
+            elif field_name == "parcel_id":
+                values = [db.execute("SELECT parcel_id FROM instruments WHERE doc_id = ?",
+                                     (r["doc_id"],)).fetchone()[0]]
+            else:  # recorded_at / prior_deed are references, not values an answer repeats verbatim
+                continue
+            for v in values:
+                forms = _value_forms(v)
+                if forms:
+                    out.append({"doc_id": r["doc_id"], "document": r["title"], "field": field_name,
+                                "value": forms[0], "forms": forms, "page": ev["page"], "quote": ev["quote"],
+                                "evidence": ev["verified"]})
+    return out

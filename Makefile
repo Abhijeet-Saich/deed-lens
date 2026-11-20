@@ -7,8 +7,8 @@ BIN := $(VENV)/bin
 help:
 	@echo "setup       create $(VENV) and install DeedLens with dev extras"
 	@echo "samples     regenerate the fictional sample PDFs        (Phase 2)"
-	@echo "ingest      ingest PDFs in data/raw                      (Phase 3)"
-	@echo "serve       run the API with auto-reload                 (Phase 5)"
+	@echo "ingest      ingest PDFs in data/raw"
+	@echo "serve       run the app at http://127.0.0.1:8000 with auto-reload"
 	@echo "eval        run the answer evaluation on the samples     (Phase 7)"
 	@echo "test        run unit tests (no key, no network)"
 	@echo "lint        ruff check"
@@ -23,7 +23,13 @@ setup:
 samples:
 	$(BIN)/python samples/make_samples.py
 
-ingest serve eval up:
+serve:
+	$(BIN)/uvicorn deedlens.api.main:app --reload --host 127.0.0.1 --port 8000
+
+ingest:
+	$(BIN)/python -m deedlens.ingest
+
+eval up:
 	@echo "'make $@' is not implemented yet (see docs/BUILD_PROMPT.md §19)."
 
 test:
