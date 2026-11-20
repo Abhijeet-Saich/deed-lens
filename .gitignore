@@ -1,3 +1,34 @@
+# Secrets
+.env
+.env.*
+!.env.example
 
-/.venv
-/data
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# App data (created at runtime; may contain real records)
+/data/
+*.db
+*.db-journal
+*.sqlite3
+
+# Learning scripts: real names and a real tax debt. Local only. See lessons/README.md
+/lessons/
+
+# Model caches
+.cache/
+models/
+hf_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

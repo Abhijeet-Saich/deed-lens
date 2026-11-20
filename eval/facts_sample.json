@@ -1,0 +1,78 @@
+{
+  "Fore_Jud_598_12": [
+    {"label": "index number", "kind": "id", "value": "1974-0381"},
+    {"label": "judge", "kind": "name", "value": "Miriam T. Calloway"},
+    {"label": "treasurer", "kind": "name", "value": "Gerald P. Hume"},
+    {"label": "parcel A in exhibit", "kind": "id", "value": "12.04-3-7"},
+    {"label": "another parcel in exhibit", "kind": "id", "value": "15.02-1-4"},
+    {"label": "reputed owner of parcel A", "kind": "name", "value": "Harlan Voss"},
+    {"label": "amount due on parcel A", "kind": "money", "value": "$412.37"},
+    {"label": "total amount due", "kind": "money", "value": "$1,753.94"},
+    {"label": "judgment date", "kind": "id", "value": "October 30, 1974"}
+  ],
+  "Tax_Deed_612_118": [
+    {"label": "treasurer (grantor)", "kind": "name", "value": "Gerald P. Hume"},
+    {"label": "grantee 1", "kind": "name", "value": "WALTER PELLEGRINO"},
+    {"label": "grantee 2", "kind": "name", "value": "EDITH PELLEGRINO"},
+    {"label": "price", "kind": "money", "value": "$850.00"},
+    {"label": "auction date", "kind": "id", "value": "March 8, 1975"},
+    {"label": "parcel", "kind": "id", "value": "12.04-3-7"},
+    {"label": "prior recording (judgment exhibit page)", "kind": "id", "value": "Book 598 of Deeds at Page 14"},
+    {"label": "former owner", "kind": "name", "value": "Harlan Voss"},
+    {"label": "grantees' address", "kind": "place", "value": "3 Mill Street"},
+    {"label": "recorded", "kind": "id", "value": "April 22, 1975"}
+  ],
+  "Deed_1043_77": [
+    {"label": "grantor 1", "kind": "name", "value": "WALTER PELLEGRINO"},
+    {"label": "grantee 2", "kind": "name", "value": "MARTA QUILL"},
+    {"label": "price (nominal)", "kind": "money", "value": "$10.00"},
+    {"label": "prior recording", "kind": "id", "value": "Book 612 of Deeds at Page 118"},
+    {"label": "grantee address", "kind": "place", "value": "88 Ferris Avenue"},
+    {"label": "lot", "kind": "place", "value": "Lot No. 7"},
+    {"label": "recorded", "kind": "id", "value": "June 10, 1988"}
+  ],
+  "Deed_2218_401": [
+    {"label": "consideration reported (cover page)", "kind": "money", "value": "$142,500.00"},
+    {"label": "transfer tax (cover page)", "kind": "money", "value": "$570.00"},
+    {"label": "consideration in deed (nominal)", "kind": "money", "value": "$10.00"},
+    {"label": "control number", "kind": "id", "value": "2004-018832"},
+    {"label": "grantor", "kind": "name", "value": "MARTA QUILL"},
+    {"label": "grantee 2", "kind": "name", "value": "PRIYA OKAFOR"},
+    {"label": "death date of prior owner", "kind": "id", "value": "January 11, 2002"},
+    {"label": "prior recording", "kind": "id", "value": "Book 1043 of Deeds at Page 77"}
+  ],
+  "Deed_3307_52": [
+    {"label": "consideration reported (cover page)", "kind": "money", "value": "$236,000.00"},
+    {"label": "transfer tax (cover page)", "kind": "money", "value": "$944.00"},
+    {"label": "consideration in deed (nominal)", "kind": "money", "value": "$1.00"},
+    {"label": "grantee 1", "kind": "name", "value": "LENA MARSH"},
+    {"label": "grantee 2", "kind": "name", "value": "TOBIAS RENN"},
+    {"label": "acreage", "kind": "place", "value": "0.62 acres"},
+    {"label": "address", "kind": "place", "value": "14 Juniper Hollow Road"},
+    {"label": "prior recording (deed text page, not cover page)", "kind": "id", "value": "Book 2218 of Deeds at Page 402"},
+    {"label": "death date of prior owner", "kind": "id", "value": "February 6, 2017"}
+  ],
+  "Deed_1580_233": [
+    {"label": "price (real, in deed)", "kind": "money", "value": "$71,500.00"},
+    {"label": "transfer tax", "kind": "money", "value": "$286.00"},
+    {"label": "grantor", "kind": "name", "value": "GORDON FAYE"},
+    {"label": "acreage", "kind": "place", "value": "0.71 acres"},
+    {"label": "address", "kind": "place", "value": "16 Juniper Hollow Road"},
+    {"label": "parcel", "kind": "id", "value": "12.04-3-8"}
+  ],
+  "Deed_2874_610": [
+    {"label": "consideration reported (cover page)", "kind": "money", "value": "$189,900.00"},
+    {"label": "transfer tax (cover page)", "kind": "money", "value": "$760.00"},
+    {"label": "grantee", "kind": "name", "value": "CALVIN OSTROWSKI"},
+    {"label": "parcel", "kind": "id", "value": "12.04-3-8"},
+    {"label": "prior recording", "kind": "id", "value": "Book 1580 of Deeds at Page 233"}
+  ],
+  "Deed_3105_288": [
+    {"label": "consideration reported (cover page)", "kind": "money", "value": "$205,000.00"},
+    {"label": "transfer tax (cover page)", "kind": "money", "value": "$820.00"},
+    {"label": "grantor", "kind": "name", "value": "NADIA FERREIRA"},
+    {"label": "grantee 1", "kind": "name", "value": "OWEN BLACKWOOD"},
+    {"label": "acreage", "kind": "place", "value": "0.58 acres"},
+    {"label": "parcel", "kind": "id", "value": "12.04-3-9"}
+  ]
+}

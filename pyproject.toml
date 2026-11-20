@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deedlens"
+version = "0.1.0"
+description = "Question answering over land records (deeds, mortgages, court judgments) with citations to the scanned page."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-dotenv>=1.0",
+    "pydantic>=2",
+    "pypdf>=4",
+    "pypdfium2>=4",
+    "pillow>=10",
+    "pytesseract>=0.3.10",
+    "sentence-transformers>=3",
+    "qdrant-client>=1.10",
+    "rank-bm25>=0.2.2",
+    "google-genai>=1.0",
+    "langchain-core>=1.0",
+    "langchain-huggingface>=1.0",
+    "langchain-qdrant>=1.0",
+    "langchain-google-genai>=4.0",
+    "langgraph>=1.0",
+    "langgraph-checkpoint-sqlite>=2.0",
+    # No upper pin here: Docker uses current CPU torch (numpy 2 is fine there).
+    # Intel Macs must install torch==2.2.2 and "numpy<2" first; see README.
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "reportlab>=4",
+    "ruff>=0.5",
+]
+
+[tool.setuptools.packages.find]
+include = ["deedlens*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: needs a Gemini key, network or model downloads (skipped by default; run with -m integration)",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["lessons"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

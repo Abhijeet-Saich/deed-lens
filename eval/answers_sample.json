@@ -1,0 +1,106 @@
+[
+  {
+    "id": "A1-owner",
+    "parcel": "12.04-3-7",
+    "question": "Who owns this property now?",
+    "must_include": [["Lena Marsh"], ["Tobias Renn"]],
+    "must_not_include": ["Calvin Ostrowski", "Owen Blackwood", "Jun Blackwood"],
+    "exercises": "current owner from the end of the chain; neighbours' owners must not leak in"
+  },
+  {
+    "id": "A2-price-now",
+    "parcel": "12.04-3-7",
+    "question": "How much did the current owners pay for the property?",
+    "must_include": [["236,000"]],
+    "must_not_include": ["189,900", "205,000"],
+    "exercises": "real price is only on the clerk cover page; the deed text says $1.00 (nominal)"
+  },
+  {
+    "id": "A3-transfer-tax-2004",
+    "parcel": "12.04-3-7",
+    "question": "What transfer tax was paid when the Okafors bought the property in 2004?",
+    "must_include": [["570"]],
+    "must_not_include": ["760", "820"],
+    "exercises": "table-like cover page value"
+  },
+  {
+    "id": "A4-size-address",
+    "parcel": "12.04-3-7",
+    "question": "How large is the lot and what is its street address?",
+    "must_include": [["0.62"], ["14 Juniper Hollow"]],
+    "must_not_include": ["0.71", "0.58", "16 Juniper Hollow", "18 Juniper Hollow"],
+    "exercises": "parcel filter against near-identical neighbour deeds"
+  },
+  {
+    "id": "A5-sole-owner-reason",
+    "parcel": "12.04-3-7",
+    "question": "Why did Desmond Okafor become the only owner of the property?",
+    "must_include": [["Priya"], ["February 6, 2017"], ["surviv", "died", "death"]],
+    "must_not_include": [],
+    "exercises": "a 'reason' part: needs the stated cause, not just a name"
+  },
+  {
+    "id": "A6-county-acquired",
+    "parcel": "12.04-3-7",
+    "question": "How did the County of Fairhaven come to own the property before it sold it in 1975?",
+    "must_include": [["foreclos"], ["1974"], ["Harlan Voss"]],
+    "must_not_include": ["198.05", "1,067.40", "76.12"],
+    "exercises": "multi-parcel judgment linked through the tax deed's citation of its exhibit page"
+  },
+  {
+    "id": "A7-amount-due-1974",
+    "parcel": "12.04-3-7",
+    "question": "How much was owed in unpaid taxes on this parcel in the 1974 foreclosure?",
+    "must_include": [["412.37"]],
+    "must_not_include": ["1,753.94", "198.05", "1,067.40", "76.12"],
+    "exercises": "pick this parcel's row out of an exhibit table, not the total or other rows"
+  },
+  {
+    "id": "A8-price-1975",
+    "parcel": "12.04-3-7",
+    "question": "What did Walter and Edith Pellegrino pay for the property?",
+    "must_include": [["850"]],
+    "must_not_include": ["71,500"],
+    "exercises": "scanned (image-only) tax deed; small but real price"
+  },
+  {
+    "id": "A9-price-1988",
+    "parcel": "12.04-3-7",
+    "question": "What price was paid in the 1988 quitclaim deed?",
+    "must_include": [["10.00", "$10", "ten dollars"], ["nominal", "token", "not the real", "not the actual", "not a real", "not on record", "isn't on record", "not recorded"]],
+    "must_not_include": ["71,500"],
+    "exercises": "nominal price must be labelled as nominal; scanned deed with no tax map number"
+  },
+  {
+    "id": "A10-seller-2019",
+    "parcel": "12.04-3-7",
+    "question": "Who sold the property to the current owners, and where is that deed recorded?",
+    "must_include": [["Desmond Okafor"], ["3307"]],
+    "must_not_include": ["Ruth Abernathy", "Samuel Abernathy", "Nadia Ferreira"],
+    "exercises": "grantor of the latest deed plus its recording reference"
+  },
+  {
+    "id": "B1-owner-price",
+    "parcel": "12.04-3-8",
+    "question": "Who owns this property now and what did they pay for it?",
+    "must_include": [["Calvin Ostrowski"], ["189,900"]],
+    "must_not_include": ["Lena Marsh", "Tobias Renn", "236,000"],
+    "exercises": "neighbour parcel: Parcel A's values must not appear"
+  },
+  {
+    "id": "B2-acreage",
+    "parcel": "12.04-3-8",
+    "question": "How many acres is the lot?",
+    "must_include": [["0.71"]],
+    "must_not_include": ["0.62", "0.58"],
+    "exercises": "look-alike deeds differ only in numbers"
+  },
+  {
+    "id": "C1-sale-2015",
+    "parcel": "12.04-3-9",
+    "question": "Who sold the property in 2015 and to whom?",
+    "must_include": [["Nadia Ferreira"], ["Owen Blackwood"], ["Jun Blackwood"]],
+    "must_not_include": ["Desmond Okafor", "Calvin Ostrowski"],
+    "exercises": "single-document parcel"
+  }
+]
