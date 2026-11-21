@@ -267,6 +267,10 @@ class Agent:
         self.graph.invoke({"question": question, "parcel": parcel}, self._config(thread_id))
         return self._result(thread_id)
 
+    def values(self, thread_id: str) -> dict[str, Any]:
+        """The full graph state of a thread (records, chunks, draft, ...), e.g. for evaluation."""
+        return dict(self.graph.get_state(self._config(thread_id)).values)
+
     def pending(self, thread_id: str) -> bool:
         return bool(self.graph.get_state(self._config(thread_id)).interrupts)
 

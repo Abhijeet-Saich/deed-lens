@@ -6,13 +6,13 @@ BIN := $(VENV)/bin
 
 help:
 	@echo "setup       create $(VENV) and install DeedLens with dev extras"
-	@echo "samples     regenerate the fictional sample PDFs        (Phase 2)"
+	@echo "samples     regenerate the fictional sample PDFs"
 	@echo "ingest      ingest PDFs in data/raw"
 	@echo "serve       run the app at http://127.0.0.1:8000 with auto-reload"
-	@echo "eval        run the answer evaluation on the samples     (Phase 7)"
+	@echo "eval        run the answer evaluation on the samples (needs GEMINI_API_KEY)"
 	@echo "test        run unit tests (no key, no network)"
 	@echo "lint        ruff check"
-	@echo "up          docker compose up --build                    (Phase 8)"
+	@echo "up          docker compose up --build (app at http://localhost:8000)"
 	@echo "clean-data  delete data/ after confirmation"
 
 setup:
@@ -29,8 +29,11 @@ serve:
 ingest:
 	$(BIN)/python -m deedlens.ingest
 
-eval up:
-	@echo "'make $@' is not implemented yet (see docs/BUILD_PROMPT.md §19)."
+eval:
+	$(BIN)/python -m eval.run_eval
+
+up:
+	docker compose up --build
 
 test:
 	$(BIN)/pytest -q

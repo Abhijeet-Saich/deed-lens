@@ -63,6 +63,9 @@ class AgentRuntime:
     def review(self, thread_id: str, action: str, text: str | None = None) -> dict[str, Any]:
         return self._agent().review(thread_id, action, text)
 
+    def values(self, thread_id: str) -> dict[str, Any]:
+        return self._agent().values(thread_id)
+
     def close(self) -> None:
         self.client.close()
         self.checkpointer.conn.close()

@@ -18,7 +18,10 @@ dependencies = [
     "pypdfium2>=4",
     "pillow>=10",
     "pytesseract>=0.3.10",
-    "sentence-transformers>=3",
+    # Bounded to the majors DeedLens is tested with: newer transformers 5 / sentence-transformers 6
+    # fail to import with the torch versions pinned for Docker (2.5) and Intel Macs (2.2).
+    "sentence-transformers>=3,<4",
+    "transformers>=4.41,<5",
     "qdrant-client>=1.10",
     "rank-bm25>=0.2.2",
     "google-genai>=1.0",

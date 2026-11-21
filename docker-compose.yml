@@ -1,0 +1,25 @@
+services:
+  deedlens:
+    build: .
+    image: deedlens:local
+    env_file:
+      - path: .env
+        required: false   # without a key the app still starts, in search-only mode
+    environment:
+      DATA_DIR: /app/data
+      HF_HOME: /models
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data   # ingested documents, indexes, records; put your own PDFs in ./data/raw
+      - models:/models     # embedding + reranker models, downloaded once
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15m   # first run downloads models and ingests the samples
+    restart: unless-stopped
+
+volumes:
+  models:

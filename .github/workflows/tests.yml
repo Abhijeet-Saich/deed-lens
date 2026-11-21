@@ -1,0 +1,31 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install CPU-only PyTorch
+        run: pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install DeedLens with dev extras
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      # Unit tests use fakes: no API key, no network, no model downloads.
+      # Integration tests (marked `integration`) are skipped by default.
+      - name: Test
+        run: pytest -q
