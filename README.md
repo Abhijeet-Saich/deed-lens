@@ -6,11 +6,36 @@ structured record of each document, links them into a chain of title, and answer
 that searches only the selected property, checks its own draft, and asks a person to review
 anything it can't back with an exact quote.
 
-![DeedLens answering a question with a clickable citation](docs/images/answer.png)
+![DeedLens: parcel abstract, chain of title and the examiner inquiry box](docs/images/home.png)
+
+| Dark mode | Answer with clickable citations |
+|---|---|
+| ![DeedLens in dark mode](docs/images/dark.png) | ![DeedLens answering a question with a clickable citation](docs/images/answer.png) |
 
 | Review before answering | Click a citation to see the page |
 |---|---|
 | ![Review panel with flagged values](docs/images/review.png) | ![Page viewer showing a clerk's cover page](docs/images/page-viewer.png) |
+
+## The web page
+
+The page has three numbered panels:
+
+1. **Parcel Abstract**: pick a tax parcel. The card shows the parcel ID, premises (address),
+   municipality, current vesting (owner) and how many recorded instruments it has. The last parcel
+   you picked is remembered.
+2. **Chain of Title**: every conveyance for the parcel, newest first. Each card shows the year,
+   instrument type (foreclosures, tax deeds, judgments and liens are highlighted), seller → buyer,
+   the reported price next to the price stated in the deed (token amounts are tagged *nominal*),
+   transfer tax, and a book & page link with the page count. Click the link to open the scan.
+3. **Title Examiner Inquiry**: type a question (up to 500 characters) or click one of the standard
+   queries, then press **Examine Records**. The answer arrives as an *Examination Report*. Every
+   source chip in it opens the exact cited page. If the agent can't back a value with an exact
+   quote, it shows *Examiner Audit Required* with the values to check against the scan, and you
+   approve, edit or reject the draft.
+
+The page viewer steps through pages with **‹ Prev / Next ›** or the **← / →** keys, and **Open
+image** shows the full-size page. The **Light / Dark** switch in the header follows your system
+setting until you pick one, and then remembers your choice.
 
 > The bundled documents are **fictional** (Fairhaven County, New York, does not exist). Every page
 > carries the banner "FICTIONAL SAMPLE DOCUMENT — NOT A REAL RECORD".
@@ -38,7 +63,8 @@ records are extracted and questions can't be answered. The page says so at the t
 ## Using your own PDFs
 
 Put PDFs in `data/raw/` and restart the container (or run `make ingest` locally). Ingestion is
-cached by file hash, so only new or changed files cost anything. Then pick the parcel in the page.
+cached by file hash, so only new or changed files cost anything. Then pick the parcel in the
+**Parcel Abstract** panel.
 
 **Privacy:** everything stays in `data/` on your machine, except the page images and text that are
 sent to Google's Gemini API for transcription, extraction and answers. `data/` is git-ignored. Don't
@@ -48,38 +74,76 @@ commit real records.
 
 ```mermaid
 flowchart LR
-  subgraph Ingestion["Ingestion  (python -m deedlens.ingest)"]
-    PDF[PDFs in data/raw] --> T{text layer?}
-    T -- yes --> TXT[page text]
-    T -- no --> OCR[Tesseract psm 6] --> GEM[Gemini transcription<br/>+ loop checks] --> TXT
-    TXT --> EX[Gemini extraction<br/>schema + evidence quotes]
-    EX --> DB[(SQLite records<br/>chain of title)]
-    TXT --> CH[chunks, 200 tokens<br/>one page each] --> Q[(Qdrant vectors)]
-    DB -- titles, parcels --> CH
+  classDef input fill:#f6ecd7,stroke:#9b6f23,stroke-width:1.5px,color:#2b2418
+  classDef step fill:#fffdf9,stroke:#173f53,stroke-width:1.5px,color:#173f53
+  classDef decide fill:#fffdf9,stroke:#9b6f23,stroke-width:1.5px,color:#2b2418
+  classDef llm fill:#e3eef2,stroke:#173f53,stroke-width:2px,color:#173f53
+  classDef store fill:#173f53,stroke:#0f2c3a,stroke-width:1.5px,color:#ffffff
+  classDef ui fill:#9b6f23,stroke:#6f4f18,stroke-width:1.5px,color:#ffffff
+
+  subgraph ING["① Ingestion · python -m deedlens.ingest"]
+    direction TB
+    PDF[/"PDFs in data/raw"/]:::input --> T{"Text layer?"}:::decide
+    T -- yes --> TXT["Page text"]:::step
+    T -- no --> OCR["Tesseract OCR<br/>--psm 6, threaded"]:::step
+    OCR --> GEM["Gemini transcription<br/>loop checks · retry · fallback"]:::llm
+    GEM --> TXT
+    TXT --> EX["Gemini extraction<br/>schema + evidence quotes"]:::llm
+    TXT --> CH["Chunks<br/>~200 tokens · one page each"]:::step
   end
-  subgraph Question["Question time  (web page -> FastAPI)"]
-    UI[Web page] --> API[FastAPI] --> AG[LangGraph agent]
-    AG --> DB
-    AG --> S[two-stage search<br/>filtered to the parcel] --> Q
+
+  subgraph DATA["② Stored in data/"]
+    direction TB
+    DB[("SQLite<br/>records · chain of title")]:::store
+    Q[("Qdrant<br/>page vectors")]:::store
   end
+
+  subgraph ASK["③ Question time"]
+    direction TB
+    UI["Web page<br/>parcel · chain · inquiry · viewer"]:::ui
+    API["FastAPI<br/>/api"]:::step
+    AG["LangGraph agent"]:::llm
+    S["Two-stage search<br/>vector ∪ BM25 → rerank<br/>filtered to the parcel"]:::step
+    UI -- question + parcel --> API --> AG
+    AG --> S
+  end
+
+  EX --> DB
+  DB -. "titles, parcels" .-> CH
+  CH --> Q
+  AG -- "records" --> DB
+  S --> Q
+  AG -. "answer + page citations" .-> UI
+
+  style ING fill:#faf6ee,stroke:#d8c9a8,color:#2b2418
+  style DATA fill:#eef3f5,stroke:#b9ccd4,color:#173f53
+  style ASK fill:#faf6ee,stroke:#d8c9a8,color:#2b2418
 ```
 
-The agent:
+Blue boxes call Gemini, dark cylinders are local stores, and the brass box is what you see in the browser.
+
+The agent answers a question in five steps:
 
 ```mermaid
-flowchart LR
-  START((start)) --> route
-  route -->|records| records
-  route -->|search| search
-  route -->|both| records & search
-  records --> answer
-  search --> answer
-  answer --> grade
-  grade -->|a part is missing:<br/>try the unused source once| records & search
-  grade --> check
-  check -->|weak evidence or a failed check:<br/>pause for a person| review([approve / edit / reject])
-  check --> DONE((answer))
-  review --> DONE
+flowchart TD
+  classDef io fill:#9b6f23,stroke:#6f4f18,stroke-width:1.5px,color:#ffffff
+  classDef agentstep fill:#fffdf9,stroke:#173f53,stroke-width:1.5px,color:#173f53
+  classDef llm fill:#e3eef2,stroke:#173f53,stroke-width:2px,color:#173f53
+  classDef decide fill:#f6ecd7,stroke:#9b6f23,stroke-width:1.5px,color:#2b2418
+  classDef human fill:#fbe9e2,stroke:#a4462b,stroke-width:2px,color:#5e2414
+
+  IN(["Question + selected parcel"]):::io --> route{"<b>route</b><br/>which source?"}:::decide
+  route -- records --> R["<b>records</b><br/>SQLite: owners, prices,<br/>chain of title"]:::agentstep
+  route -- search --> S["<b>search</b><br/>page chunks for<br/>this parcel only"]:::agentstep
+  route -- both --> R & S
+  R --> A["<b>answer</b><br/>draft that cites<br/>every value"]:::llm
+  S --> A
+  A --> G{"<b>grade</b><br/>is every part<br/>answered?"}:::decide
+  G -. "a part is missing:<br/>try the unused source once" .-> R & S
+  G -- yes --> C{"<b>check</b><br/>guardrails +<br/>exact-quote evidence"}:::decide
+  C -- passes --> OUT(["Examination Report<br/>with page citations"]):::io
+  C -- "weak evidence or<br/>a failed check" --> H[["Examiner Audit Required<br/>approve · edit · reject"]]:::human
+  H --> OUT
 ```
 
 More detail, including the data model, is in [docs/architecture.md](docs/architecture.md).

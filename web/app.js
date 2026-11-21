@@ -70,6 +70,48 @@ function recall(key) {
   try { return localStorage.getItem(key); } catch (_) { return null; }
 }
 
+function getSystemTheme() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme, persist = false) {
+  const resolved = theme === "dark" ? "dark" : "light";
+  const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.style.colorScheme = resolved;
+  if (persist) store("deedlens.theme", resolved);
+
+  const btn = $("#theme-toggle");
+  const label = $("#theme-label");
+  if (!btn || !label) return;
+  const isDark = resolved === "dark";
+  const nextLabel = isDark ? "Switch to light mode" : "Switch to dark mode";
+  btn.setAttribute("aria-pressed", String(isDark));
+  btn.setAttribute("aria-label", nextLabel);
+  btn.title = nextLabel;
+  label.textContent = isDark ? "Dark" : "Light";
+}
+
+function initTheme() {
+  const saved = recall("deedlens.theme");
+  applyTheme(saved === "light" || saved === "dark" ? saved : getSystemTheme(), false);
+  const btn = $("#theme-toggle");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      applyTheme(current === "dark" ? "light" : "dark", true);
+    });
+  }
+  if (window.matchMedia) {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemChange = (e) => {
+      const pinned = recall("deedlens.theme");
+      if (pinned !== "light" && pinned !== "dark") applyTheme(e.matches ? "dark" : "light", false);
+    };
+    if (mq.addEventListener) mq.addEventListener("change", onSystemChange);
+  }
+}
+
 function showError(message) {
   const box = $("#error");
   box.textContent = message || "";
@@ -148,9 +190,19 @@ async function selectParcel(parcel) {
   }
   store("deedlens.parcel", parcel);
   const p = state.properties.find((x) => x.parcel === parcel);
+  $('[data-field="parcel"]', card).textContent = parcel;
   $('[data-field="address"]', card).textContent = (p && p.address) || "Not on record";
+  const townRow = $("#town-row", card);
+  if (p && p.town) {
+    $('[data-field="town"]', card).textContent = p.town;
+    townRow.hidden = false;
+  } else {
+    townRow.hidden = true;
+  }
   $('[data-field="owner"]', card).textContent = (p && p.current_owner) || "Not on record";
-  $('[data-field="documents"]', card).textContent = p ? String(p.documents) : "—";
+  $('[data-field="documents"]', card).textContent = p
+    ? `${p.documents} recorded instrument${p.documents === 1 ? "" : "s"}`
+    : "—";
   card.hidden = false;
   updateControls();
 
@@ -168,29 +220,40 @@ async function selectParcel(parcel) {
 function chainItem(entry) {
   const priceBits = [];
   if (entry.price_reported !== null && entry.price_reported !== undefined) {
-    priceBits.push(el("strong", {}, money(entry.price_reported)), " reported to the county");
+    priceBits.push(el("strong", {}, money(entry.price_reported)), " reported");
     if (entry.price_in_deed !== null && entry.price_in_deed !== undefined) {
-      priceBits.push(" · deed states ", money(entry.price_in_deed));
+      priceBits.push(" · deed ", money(entry.price_in_deed));
     }
   } else if (entry.price_in_deed !== null && entry.price_in_deed !== undefined) {
     priceBits.push("Deed states ", el("strong", {}, money(entry.price_in_deed)));
   }
   if (entry.nominal) priceBits.push(" ", el("span", { class: "tag", title: "A token amount, not the real price" }, "nominal"));
-  if (entry.transfer_tax) priceBits.push(` · transfer tax ${money(entry.transfer_tax)}`);
+  if (entry.transfer_tax) priceBits.push(` · tax ${money(entry.transfer_tax)}`);
+
+  const typeText = entry.type || "document";
+  const isAlertType = /foreclosure|tax|judgment|lien/i.test(typeText);
+  const pageText = entry.num_pages ? `${entry.num_pages} pp.` : null;
 
   return el("li", {},
-    el("div", { class: "tl-head" },
-      el("span", { class: "tl-year" }, entry.year || "—"),
-      el("span", { class: "tl-type" }, entry.type || "document")),
-    (entry.sellers.length || entry.buyers.length)
-      ? el("p", { class: "tl-parties" }, names(entry.sellers), el("span", { class: "arrow", "aria-label": "to" }, "→"),
-        names(entry.buyers))
-      : null,
-    priceBits.length ? el("p", { class: "tl-price" }, ...priceBits) : null,
-    el("button", {
-      type: "button", class: "link-button",
-      onclick: () => openViewer(entry.doc_id, 1, entry.title),
-    }, entry.title));
+    el("div", { class: "tl-card" },
+      el("div", { class: "tl-head" },
+        el("span", { class: "tl-year" }, entry.year || "—"),
+        el("span", { class: isAlertType ? "tl-type tl-type-alert" : "tl-type" }, typeText)),
+      (entry.sellers.length || entry.buyers.length)
+        ? el("p", { class: "tl-parties" },
+            el("span", { class: "party-name" }, names(entry.sellers)),
+            el("span", { class: "arrow", "aria-label": "to" }, "→"),
+            el("span", { class: "party-name" }, names(entry.buyers)))
+        : null,
+      priceBits.length ? el("p", { class: "tl-price" }, ...priceBits) : null,
+      el("div", { class: "tl-doc-row" },
+        el("button", {
+          type: "button", class: "link-button tl-doc-btn",
+          onclick: () => openViewer(entry.doc_id, 1, entry.title),
+        },
+        el("span", { class: "tl-doc-icon", "aria-hidden": "true" }, "§"),
+        el("span", {}, entry.title),
+        pageText ? el("span", { class: "tl-pages" }, pageText) : null))));
 }
 
 /* ---------------------------------------------------------------- asking */
@@ -201,7 +264,7 @@ function updateControls() {
   $("#question").disabled = state.busy || !state.parcel;
   document.querySelectorAll(".example").forEach((b) => { b.disabled = disabled; });
   document.querySelectorAll(".review-actions .button").forEach((b) => { b.disabled = state.busy; });
-  $("#ask-button").textContent = state.busy ? "Working…" : "Ask";
+  $("#ask-button").textContent = state.busy ? "Examining…" : "Examine Records";
 }
 
 function setBusy(busy) {
@@ -423,6 +486,7 @@ function renderViewer() {
 /* ---------------------------------------------------------------- wiring */
 
 function init() {
+  initTheme();
   $("#examples").replaceChildren(...EXAMPLES.map((q) => el("li", {},
     el("button", { type: "button", class: "example", onclick: () => { $("#question").value = q; updateCount(); ask(q); } }, q))));
 
@@ -446,6 +510,18 @@ function init() {
       state.viewer.page += Number(b.dataset.step);
       renderViewer();
     });
+  });
+  dialog.addEventListener("keydown", (e) => {
+    if (!state.viewer) return;
+    if (e.key === "ArrowLeft" && state.viewer.page > 1) {
+      e.preventDefault();
+      state.viewer.page -= 1;
+      renderViewer();
+    } else if (e.key === "ArrowRight" && (!state.viewer.pages || state.viewer.page < state.viewer.pages)) {
+      e.preventDefault();
+      state.viewer.page += 1;
+      renderViewer();
+    }
   });
 
   updateControls();

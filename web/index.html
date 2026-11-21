@@ -6,69 +6,153 @@
   <title>DeedLens</title>
   <meta name="description" content="Ask questions about land records and get answers that cite the exact scanned page.">
   <meta name="color-scheme" content="light dark">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='17' height='23' rx='2' fill='%23f4efe4' stroke='%231f4e5a' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='6' fill='none' stroke='%23b4532a' stroke-width='3'/%3E%3Cpath d='M24.5 24.5 29 29' stroke='%23b4532a' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script>
+    (() => {
+      let theme;
+      try { theme = localStorage.getItem("deedlens.theme"); } catch (_) { /* storage may be blocked */ }
+      const resolved = theme === "light" || theme === "dark"
+        ? theme
+        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.style.colorScheme = resolved;
+    })();
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23f4efe5' stroke='%23173f53' stroke-width='2'/%3E%3Crect x='9' y='7' width='12' height='15' rx='1.5' fill='%23fffdf9' stroke='%23173f53' stroke-width='1.5'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23f6ecd7' stroke='%239b6f23' stroke-width='2.2'/%3E%3Cpath d='M23.5 23.5 27 27' stroke='%239b6f23' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <a class="skip-link" href="#question">Skip to the question box</a>
 
+  <div class="top-ribbon" aria-hidden="true"></div>
+
   <header class="site-header">
-    <div class="brand">
-      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="6" y="3" width="17" height="23" rx="2" class="logo-paper"/>
-        <path d="M10 9h9M10 13h9M10 17h5" class="logo-lines"/>
-        <circle cx="20" cy="20" r="6" class="logo-lens"/>
-        <path d="M24.5 24.5 29 29" class="logo-handle"/>
-      </svg>
-      <div>
-        <h1>DeedLens</h1>
-        <p class="tagline">Questions about land records, answered with citations to the scanned page.</p>
+    <div class="header-inner">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="20" class="logo-seal-outer"/>
+          <circle cx="22" cy="22" r="16.5" class="logo-seal-ring"/>
+          <rect x="12" y="10" width="14.5" height="19" rx="1.8" class="logo-paper"/>
+          <path d="M15.5 14.5h7.5M15.5 18h7.5M15.5 21.5h4.5" class="logo-lines"/>
+          <circle cx="26.5" cy="26.5" r="5.8" class="logo-lens-bg"/>
+          <circle cx="26.5" cy="26.5" r="5.8" class="logo-lens"/>
+          <path d="M30.7 30.7 35 35" class="logo-handle"/>
+        </svg>
+        <div class="brand-copy">
+          <div class="brand-title-row">
+            <h1>DeedLens</h1>
+            <span class="brand-est">Abstract &amp; Title Desk</span>
+          </div>
+          <p class="tagline">LAND RECORDS EXAMINATION · VERIFIED PAGE CITATIONS</p>
+        </div>
       </div>
-    </div>
-    <div id="status" class="status" role="status" aria-live="polite">
-      <span class="dot" aria-hidden="true"></span><span class="status-text">Connecting…</span>
+
+      <div class="header-tools">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false"
+                aria-label="Switch to dark mode" title="Switch to dark mode">
+          <span class="theme-track" aria-hidden="true">
+            <span class="theme-icon theme-sun-wrap">
+              <svg class="theme-sun" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M10 2v1.8M10 16.2V18M18 10h-1.8M3.8 10H2m13.6-5.6-1.3 1.3M5.7 14.3l-1.3 1.3m11.2 0-1.3-1.3M5.7 5.7 4.4 4.4"
+                      fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="theme-icon theme-moon-wrap">
+              <svg class="theme-moon" viewBox="0 0 20 20">
+                <path d="M16.2 12.6A6.8 6.8 0 0 1 7.4 3.8a7 7 0 1 0 8.8 8.8Z" fill="none"
+                      stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </span>
+          <span id="theme-label" class="theme-label">Light</span>
+        </button>
+
+        <div id="status" class="status" role="status" aria-live="polite">
+          <span class="dot" aria-hidden="true"></span><span class="status-text">Connecting…</span>
+        </div>
+      </div>
     </div>
   </header>
 
   <div id="error" class="banner banner-error" role="alert" hidden></div>
 
+  <section class="page-intro" aria-labelledby="page-title">
+    <div class="intro-copy">
+      <p class="eyebrow"><span class="diamond" aria-hidden="true">◆</span> Public Land Record Abstract</p>
+      <h2 id="page-title">Examine the chain of title with page-level proof.</h2>
+      <p class="intro-desc">Inspect recorded deeds, tax conveyances, and vesting history—with every finding anchored directly to the scanned instrument.</p>
+    </div>
+    <div class="intro-seal" aria-hidden="true">
+      <div class="seal-pill">
+        <span>RECORD</span>
+        <span class="sep">◆</span>
+        <span>VERIFY</span>
+        <span class="sep">◆</span>
+        <span>CITE</span>
+      </div>
+      <span class="seal-caption">Folio Citation Engine</span>
+    </div>
+  </section>
+
   <main class="layout">
     <aside class="sidebar" aria-labelledby="property-heading">
-      <section class="panel">
-        <h2 id="property-heading">Property</h2>
-        <label for="parcel" class="field-label">Choose a tax parcel</label>
-        <select id="parcel" disabled>
-          <option value="">Loading properties…</option>
-        </select>
+      <section class="panel panel-dossier">
+        <div class="section-heading">
+          <span class="section-index">01</span>
+          <div>
+            <h2 id="property-heading">Parcel Abstract</h2>
+            <p class="section-sub">Tax map &amp; current vesting</p>
+          </div>
+        </div>
+        <label for="parcel" class="field-label">Select tax parcel</label>
+        <div class="select-wrap">
+          <select id="parcel" disabled>
+            <option value="">Loading properties…</option>
+          </select>
+        </div>
         <dl id="property-card" class="property-card" hidden>
-          <div><dt>Address</dt><dd data-field="address"></dd></div>
-          <div><dt>Current owner</dt><dd data-field="owner"></dd></div>
-          <div><dt>Documents</dt><dd data-field="documents"></dd></div>
+          <div class="prop-row"><dt>Parcel ID</dt><dd data-field="parcel" class="mono-val"></dd></div>
+          <div class="prop-row"><dt>Premises</dt><dd data-field="address"></dd></div>
+          <div class="prop-row" id="town-row" hidden><dt>Municipality</dt><dd data-field="town"></dd></div>
+          <div class="prop-row prop-owner"><dt>Current vesting</dt><dd data-field="owner"></dd></div>
+          <div class="prop-row"><dt>Instruments</dt><dd data-field="documents" class="doc-count"></dd></div>
         </dl>
       </section>
 
-      <section class="panel" aria-labelledby="chain-heading">
-        <h2 id="chain-heading">Chain of title</h2>
-        <p class="hint" id="chain-hint">Newest first. Select a document to see its first page.</p>
+      <section class="panel panel-chain" aria-labelledby="chain-heading">
+        <div class="section-heading">
+          <span class="section-index">02</span>
+          <div>
+            <h2 id="chain-heading">Chain of Title</h2>
+            <p class="section-sub">Chronological conveyance ledger</p>
+          </div>
+        </div>
+        <p class="hint" id="chain-hint">Newest instrument first. Click any recorded book &amp; page to inspect the scan.</p>
         <ol id="chain" class="timeline"></ol>
       </section>
     </aside>
 
     <section class="main" aria-labelledby="ask-heading">
-      <section class="panel">
-        <h2 id="ask-heading">Ask about this property</h2>
+      <section class="panel panel-inquiry">
+        <div class="section-heading">
+          <span class="section-index">03</span>
+          <div>
+            <h2 id="ask-heading">Title Examiner Inquiry</h2>
+            <p class="section-sub">Query ownership, consideration, legal description &amp; encumbrances</p>
+          </div>
+        </div>
         <form id="ask-form" novalidate>
-          <label for="question" class="field-label">Your question</label>
+          <label for="question" class="field-label">Examination question</label>
           <textarea id="question" name="question" rows="3" maxlength="500"
-                    placeholder="e.g. Who owns this property now, and what did they pay?"
+                    placeholder="e.g. Who holds current title to this parcel, and what consideration was paid?"
                     aria-describedby="question-count" required></textarea>
           <div class="form-row">
-            <span id="question-count" class="hint">0 / 500</span>
-            <button type="submit" id="ask-button" class="button primary">Ask</button>
+            <span id="question-count" class="hint count-pill">0 / 500</span>
+            <button type="submit" id="ask-button" class="button primary">Examine Records</button>
           </div>
         </form>
         <div class="examples">
-          <span class="hint" id="examples-label">Try:</span>
+          <span class="hint examples-title" id="examples-label">Standard queries:</span>
           <ul id="examples" class="example-list" aria-labelledby="examples-label"></ul>
         </div>
       </section>
@@ -76,11 +160,17 @@
       <section id="result" class="panel result" aria-live="polite" aria-busy="false" hidden>
         <div id="loading" class="loading" hidden>
           <span class="spinner" aria-hidden="true"></span>
-          <span>Reading the records… answers take about 5–20 seconds.</span>
+          <div class="loading-copy">
+            <strong>Searching recorded instruments…</strong>
+            <span>Cross-checking deeds and page scans (typically 5–20 seconds).</span>
+          </div>
         </div>
 
         <article id="answer" hidden>
-          <h2 class="result-heading">Answer</h2>
+          <div class="report-head">
+            <span class="report-badge">Examination Report</span>
+            <h2 class="result-heading">Verified Abstract Answer</h2>
+          </div>
           <p class="question-echo"></p>
           <div class="answer-text"></div>
           <p class="review-note hint" hidden></p>
@@ -88,14 +178,17 @@
         </article>
 
         <article id="review" class="review" hidden>
-          <h2 class="result-heading">Needs your review</h2>
+          <div class="report-head">
+            <span class="report-badge report-badge-warn">Examiner Audit Required</span>
+            <h2 class="result-heading">Needs your review</h2>
+          </div>
           <p class="hint">The draft below uses values whose evidence is not an exact quote, or it failed an
             automatic check. Compare them with the cited pages before approving.</p>
           <p class="question-echo"></p>
-          <h3>Draft answer</h3>
+          <h3>Draft report</h3>
           <div class="answer-text draft"></div>
           <div class="flagged-wrap" hidden>
-            <h3>Values to check</h3>
+            <h3>Values to verify against scan</h3>
             <div class="table-scroll">
               <table class="flagged">
                 <thead><tr><th scope="col">Value</th><th scope="col">Document</th><th scope="col">Field</th>
@@ -105,7 +198,7 @@
             </div>
           </div>
           <div class="issues-wrap" hidden>
-            <h3>Automatic checks</h3>
+            <h3>Automatic verification checks</h3>
             <ul class="issues"></ul>
           </div>
           <div class="edit-wrap" hidden>
@@ -124,19 +217,24 @@
   </main>
 
   <footer class="site-footer">
-    <p>Answers are drafted by an AI model from the recorded documents. Always check the cited page.
-      The bundled samples are fictional.</p>
+    <div class="footer-inner">
+      <p><strong>Abstract Notice:</strong> Findings are drafted by an AI title assistant from recorded documents. Always inspect the cited page scan before relying on an abstract.</p>
+      <p class="footer-meta">Bundled sample records are fictional.</p>
+    </div>
   </footer>
 
   <dialog id="viewer" class="viewer" aria-labelledby="viewer-title">
     <div class="viewer-bar">
-      <h2 id="viewer-title" class="viewer-title"></h2>
+      <div class="viewer-title-group">
+        <span class="viewer-kicker">Document Scan</span>
+        <h2 id="viewer-title" class="viewer-title"></h2>
+      </div>
       <div class="viewer-nav">
         <button type="button" class="button small" data-step="-1" aria-label="Previous page">‹ Prev</button>
         <span class="viewer-page" aria-live="polite"></span>
         <button type="button" class="button small" data-step="1" aria-label="Next page">Next ›</button>
         <a class="button small" id="viewer-open" target="_blank" rel="noopener">Open image</a>
-        <button type="button" class="button small" id="viewer-close" aria-label="Close page viewer">Close</button>
+        <button type="button" class="button small primary" id="viewer-close" aria-label="Close page viewer">Close</button>
       </div>
     </div>
     <div class="viewer-body">
